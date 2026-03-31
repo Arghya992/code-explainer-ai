@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Code Explainer AI</title>
+
+  <!-- Google Fonts -->
+
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+
+  <!-- ✅ FIXED: correct Flask CSS path -->
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <div class="wrapper">
+
+```
+<header class="header">
+  <div class="logo">
+    <span class="logo-icon">⟨/⟩</span>
+    <span class="logo-text">Code<strong>Explainer</strong></span>
+  </div>
+  <p class="tagline">Paste any code. Get a plain-English explanation — instantly.</p>
+</header>
+
+<main class="card">
+
+  <section class="input-section">
+    <label class="section-label" for="codeInput">
+      <span class="label-icon">01</span> Your Code
+    </label>
+
+    <div class="textarea-wrapper">
+      <textarea
+        id="codeInput"
+        placeholder="# Paste any code here — Python, JavaScript, HTML, C++…"
+        spellcheck="false"
+      ></textarea>
+      <div class="code-meta" id="codeMeta">0 lines · 0 chars</div>
+    </div>
+
+    <div class="action-row">
+      <button id="explainBtn" class="btn-primary" onclick="explainCode()">
+        <span class="btn-icon">✦</span>
+        <span class="btn-label">Explain Code</span>
+        <span class="btn-loader" id="btnLoader" style="display:none">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </button>
+
+      <button class="btn-ghost" onclick="clearAll()">Clear</button>
+    </div>
+  </section>
+
+  <div class="divider" id="divider" style="display:none">
+    <span>explanation</span>
+  </div>
+
+  <section class="output-section" id="outputSection" style="display:none">
+
+    <div class="section-label">
+      <span class="label-icon">02</span> Explanation
+      <button class="copy-btn" id="copyBtn" onclick="copyExplanation()" title="Copy explanation">
+        📋 Copy
+      </button>
+    </div>
+
+    <div class="error-box" id="errorBox" style="display:none">
+      <span id="errorText"></span>
+    </div>
+
+    <div class="output-content" id="outputContent"></div>
+
+  </section>
+
+</main>
+
+<footer class="footer">
+  Powered by <strong>Google Gemini AI</strong> · Built with Flask &amp; ❤️
+</footer>
+```
+
+  </div>
+
+  <script>
+    const codeInput = document.getElementById("codeInput");
+    const codeMeta  = document.getElementById("codeMeta");
+
+    codeInput.addEventListener("input", () => {
+      const lines = codeInput.value.split("\n").length;
+      const chars = codeInput.value.length;
+      codeMeta.textContent = `${lines} line${lines !== 1 ? "s" : ""} · ${chars} char${chars !== 1 ? "s" : ""}`;
+    });
+
+    async function explainCode() {
+      const code = codeInput.value.trim();
+
+      if (!code) {
+        codeInput.classList.add("shake");
+        setTimeout(() => codeInput.classList.remove("shake"), 500);
+        return;
+      }
+
+      setLoading(true);
+      hideOutput();
+
+      try {
+        const response = await fetch("/explain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: code })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          showError(data.error);
+        } else {
+          showExplanation(data.explanation);
+        }
+
+      } catch (err) {
+        showError("❌ Could not connect to the server. Is Flask running?");
+      }
+
+      setLoading(false);
+    }
+
+    function setLoading(isLoading) {
+      const btn    = document.getElementById("explainBtn");
+      const label  = document.querySelector(".btn-label");
+      const loader = document.getElementById("btnLoader");
+      const icon   = document.querySelector(".btn-icon");
+
+      btn.disabled    = isLoading;
+      label.style.display = isLoading ? "none" : "inline";
+      icon.style.display  = isLoading ? "none" : "inline";
+      loader.style.display = isLoading ? "inline-flex" : "none";
+    }
+
+    function showExplanation(text) {
+      const section = document.getElementById("outputSection");
+      const content = document.getElementById("outputContent");
+      const divider = document.getElementById("divider");
+
+      content.innerHTML = text;
+      section.style.display = "block";
+      divider.style.display = "flex";
+
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function showError(message) {
+      const section  = document.getElementById("outputSection");
+      const errorBox = document.getElementById("errorBox");
+      const errorTxt = document.getElementById("errorText");
+      const divider  = document.getElementById("divider");
+
+      errorTxt.textContent   = message;
+      errorBox.style.display = "block";
+      section.style.display  = "block";
+      divider.style.display  = "flex";
+    }
+
+    function hideOutput() {
+      document.getElementById("outputSection").style.display = "none";
+      document.getElementById("divider").style.display       = "none";
+      document.getElementById("errorBox").style.display      = "none";
+      document.getElementById("outputContent").innerHTML     = "";
+    }
+
+    function clearAll() {
+      codeInput.value = "";
+      codeMeta.textContent = "0 lines · 0 chars";
+      hideOutput();
+      codeInput.focus();
+    }
+
+    function copyExplanation() {
+      const text = document.getElementById("outputContent").innerText;
+      navigator.clipboard.writeText(text);
+    }
+  </script>
+
+</body>
+</html>
