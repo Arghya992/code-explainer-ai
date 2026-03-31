@@ -81,7 +81,7 @@ export GROQ_API_KEY=your_api_key_here
 ##  How to Run
 
 1. Clone the repository:
-git clone https://github.com/your-username/code-explainer-ai.git
+git clone https://github.com/Arghya992/code-explainer-ai.git
 
 cd code-explainer-ai
 
